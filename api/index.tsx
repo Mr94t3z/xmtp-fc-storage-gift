@@ -1,6 +1,11 @@
 import { Button, Frog, TextInput } from 'frog'
+import { handle } from 'frog/vercel'
 import { validateFramesPost } from "@xmtp/frames-validator";
 import type { MiddlewareHandler } from 'hono'
+
+// Uncomment this packages to tested on local server
+// import { devtools } from 'frog/dev';
+// import { serveStatic } from 'frog/serve-static';
  
 const addMetaTags = (client: string, version?: string) => {
   // Follow the OpenFrames meta tags spec
@@ -59,3 +64,10 @@ app.frame("/", (c) => {
     )
   })
 })
+
+
+// Uncomment for local server testing
+// devtools(app, { serveStatic });
+
+export const GET = handle(app)
+export const POST = handle(app)
