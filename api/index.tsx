@@ -172,7 +172,7 @@ app.frame('/gift', async (c) => {
       action: `/tx-status`,
       image: `/gift-image/${toFid}`,
       intents: [
-        <Button.Transaction target={`/tx-gift`}>Confirm</Button.Transaction>,
+        <Button.Transaction target={`/tx-gift/${toFid}`}>Confirm</Button.Transaction>,
         <Button action='/'>Cancel</Button>,
       ]
     })
