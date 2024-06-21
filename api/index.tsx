@@ -36,17 +36,15 @@ function xmtpSupport(): MiddlewareHandler<{
     await next();
   }
 }
- 
-export const app = new Frog(addMetaTags("xmtp")).use(xmtpSupport());
 
-// export const app = new Frog({
-//   assetsPath: '/',
-//   basePath: '/api/frame',
-//   // Uncomment and provide the API key if you need to enable frame verification
-//   // hub: neynar({ apiKey: 'NEYNAR_FROG_FM' })
-// })
-//   .use(addMetaTags("xmtp"))
-//   .use(xmtpSupport());
+export const app = new Frog({
+  ...addMetaTags('xmtp'),
+  assetsPath: '/',
+  basePath: '/api/frame',
+  // Uncomment and provide the API key if you need to enable frame verification
+  // hub: neynar({ apiKey: 'NEYNAR_FROG_FM' })
+})
+  .use(xmtpSupport());
  
 // Access verified wallet address in a frame:
 app.frame("/", (c) => {
