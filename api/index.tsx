@@ -60,16 +60,16 @@ function xmtpSupport(): MiddlewareHandler<{
 
 
 export const app = new Frog({
-  ...addMetaTags('xmtp'),
+  // ...addMetaTags('xmtp'),
   assetsPath: '/',
   basePath: '/api/frame',
   ui: { vars },
 })
-  .use(xmtpSupport());
+  // .use(xmtpSupport());
 
 
 // Support Open Frames
-app.use(async (c, next) => {
+app.use('/*', async (c, next) => {
   await next();
   const isFrame = c.res.headers.get('content-type')?.includes('html');
   if (isFrame) {
