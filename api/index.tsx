@@ -30,31 +30,34 @@ const addMetaTags = (client: string, version?: string) => {
   // Follow the OpenFrames meta tags spec
   return {
     unstable_metaTags: [
-      { property: `of:accepts`, content: version || "vNext" },
-      { property: `of:accepts:${client}`, content: version || "vNext" },
+      { property: 'of:accepts', content: version || 'vNext' },
+      { property: `of:accepts:${client}`, content: version || 'vNext' },
+      { property: 'of:accepts:anonymous', content: '1.0' },
     ],
   };
 };
+
  
 function xmtpSupport(): MiddlewareHandler<{
-  Variables: { client?: 'xmtp' | 'farcaster'; verifiedWalletAddress?: string }
+  Variables: { client?: 'xmtp' | 'farcaster' | 'anonymous'; verifiedWalletAddress?: string };
 }> {
   return async (c, next) => {
-    // Check if the request is a POST and relevant for XMTP processing
-    if (c.req.method === "POST") {
+    if (c.req.method === 'POST') {
       const requestBody = (await c.req.json().catch(() => {})) || {};
-      if (requestBody?.clientProtocol?.includes("xmtp")) {
-        c.set("client", "xmtp");
+      if (requestBody?.clientProtocol?.includes('xmtp')) {
+        c.set('client', 'xmtp');
         const { verifiedWalletAddress } = await validateFramesPost(requestBody);
-        c.set("verifiedWalletAddress", verifiedWalletAddress);
+        c.set('verifiedWalletAddress', verifiedWalletAddress);
+      } else if (requestBody?.clientProtocol?.includes('anonymous@1.0')) {
+        c.set('client', 'anonymous');
       } else {
-        // Add farcaster check
-        c.set("client", "farcaster");
+        c.set('client', 'farcaster');
       }
     }
     await next();
-  }
+  };
 }
+
 
 export const app = new Frog({
   ...addMetaTags('xmtp'),
@@ -63,23 +66,6 @@ export const app = new Frog({
   ui: { vars },
 })
   .use(xmtpSupport());
- 
-// Access verified wallet address in a frame:
-// app.frame("/", (c) => {
-//   /* Get Frame variables */
-//   // const { buttonValue, inputText, status } = c;
- 
-//   // XMTP verified address
-//   const { verifiedWalletAddress } = c?.var || {};
- 
-//   return c.res({
-//     image: (
-//       <div tw="flex">
-//         XMTP Frame. Verified Address: {verifiedWalletAddress}
-//       </div>
-//     )
-//   })
-// })
 
 
 // Initial frame
@@ -340,7 +326,10 @@ async (c) => {
   });
 
   if (!unsignedTransaction) {
-    throw new Error("missing unsigned transaction");
+    // throw new Error("missing unsigned transaction");
+    return c.error({
+      message: "missing unsigned transaction",
+    });
   }
 
   return c.send({
@@ -359,7 +348,9 @@ app.frame("/tx-status", async (c) => {
   const txHash = transactionId || buttonValue;
  
   if (!txHash) {
-    throw new Error("missing transaction hash");
+    return c.error({
+      message: "Transaction hash not found, please refresh!",
+    });
   }
  
   try {
