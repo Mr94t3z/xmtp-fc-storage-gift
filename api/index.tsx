@@ -46,7 +46,7 @@ function xmtpSupport(): MiddlewareHandler<{
       const requestBody = (await c.req.json().catch(() => {})) || {};
       if (requestBody?.clientProtocol?.includes('xmtp')) {
         c.set('client', 'xmtp');
-        const { verifiedWalletAddress } = await validateFramesPost(requestBody);
+        const { verifiedWalletAddress,  } = await validateFramesPost(requestBody);
         c.set('verifiedWalletAddress', verifiedWalletAddress);
       } else if (requestBody?.clientProtocol?.includes('anonymous@1.0')) {
         c.set('client', 'anonymous');
@@ -60,49 +60,49 @@ function xmtpSupport(): MiddlewareHandler<{
 
 
 export const app = new Frog({
-  // ...addMetaTags('xmtp'),
+  ...addMetaTags('xmtp'),
   assetsPath: '/',
   basePath: '/api/frame',
   ui: { vars },
 })
-  // .use(xmtpSupport());
+  .use(xmtpSupport());
 
 
 // Support Open Frames
-app.use('/*', async (c, next) => {
-  await next();
-  const isFrame = c.res.headers.get('content-type')?.includes('html');
-  if (isFrame) {
-    let html = await c.res.text();
-    const regex = /<meta.*?\/>/gs;
-    const matches = [...html.matchAll(regex)];
-    let metaTags = matches.map((match) => match[0])?.join?.('');
+// app.use('/*', async (c, next) => {
+//   await next();
+//   const isFrame = c.res.headers.get('content-type')?.includes('html');
+//   if (isFrame) {
+//     let html = await c.res.text();
+//     const regex = /<meta.*?\/>/gs;
+//     const matches = [...html.matchAll(regex)];
+//     let metaTags = matches.map((match) => match[0])?.join?.('');
 
-    let openFrameTags = metaTags
-      .replaceAll('fc:frame:image', 'of:image')
-      .replace(/fc:frame:button:(\d+)/g, 'of:button:$1')
-      .replace(/fc:frame:button:(\d+):action/g, 'of:button:$1:action')
-      .replace(/fc:frame:button:(\d+):target/g, 'of:button:$1:target')
-      .replaceAll('fc:frame:input:text', 'of:input:text')
-      .replaceAll('fc:frame:image:aspect_ratio', 'of:image:aspect_ratio')
-      .replaceAll('fc:frame:state', 'of:state');
+//     let openFrameTags = metaTags
+//       .replaceAll('fc:frame:image', 'of:image')
+//       .replace(/fc:frame:button:(\d+)/g, 'of:button:$1')
+//       .replace(/fc:frame:button:(\d+):action/g, 'of:button:$1:action')
+//       .replace(/fc:frame:button:(\d+):target/g, 'of:button:$1:target')
+//       .replaceAll('fc:frame:input:text', 'of:input:text')
+//       .replaceAll('fc:frame:image:aspect_ratio', 'of:image:aspect_ratio')
+//       .replaceAll('fc:frame:state', 'of:state');
 
-    openFrameTags += [
-      `<meta property="of:accepts:farcaster" content="vNext"/>`,
-      `<meta property="of:accepts:xmtp" content="2024-02-01"/>`,
-      `<meta property="of:accepts:lens" content="1.1"/>`,
-      `<meta property="of:accepts:anonymous" content="1.0"/>`,
-    ].join('\n');
+//     openFrameTags += [
+//       `<meta property="of:accepts:farcaster" content="vNext"/>`,
+//       `<meta property="of:accepts:xmtp" content="2024-02-01"/>`,
+//       `<meta property="of:accepts:lens" content="1.1"/>`,
+//       `<meta property="of:accepts:anonymous" content="1.0"/>`,
+//     ].join('\n');
 
-    html = html.replace(/(<head>)/i, `$1${openFrameTags}`);
+//     html = html.replace(/(<head>)/i, `$1${openFrameTags}`);
 
-    c.res = new Response(html, {
-      headers: {
-        'content-type': 'text/html',
-      },
-    });
-  }
-});
+//     c.res = new Response(html, {
+//       headers: {
+//         'content-type': 'text/html',
+//       },
+//     });
+//   }
+// });
 
 
 // Initial frame
@@ -336,7 +336,8 @@ app.transaction('/tx-gift/:toFid', async (c, next) => {
   });
 },
 async (c) => {
-  const { address } = c;
+  // XMTP verified address
+  const { verifiedWalletAddress } = c?.var || {};
   const { toFid } = c.req.param();
 
   // Get current storage price
@@ -344,7 +345,7 @@ async (c) => {
   const price = await storageRegistry.read.price([units]);
 
   const { unsignedTransaction } = await glideClient.createSession({
-    payerWalletAddress: address,
+    payerWalletAddress: verifiedWalletAddress,
    
     // Optional. Setting this restricts the user to only
     // pay with the specified currency.
